@@ -1,0 +1,233 @@
+#!/usr/bin/env python3
+"""
+mycelium-core :: Master Orchestrator
+=====================================
+Watches every repo in the Meeko Mycelium organism.
+Checks health (last commit age, workflow status, open issues),
+flags staleness or failures, writes organism_health.json,
+and posts alert issues on mycelium-core when something needs attention.
+"""
+
+import json
+import subprocess
+import sys
+from datetime import datetime, timezone, timedelta
+from pathlib import Path
+
+ORG = "meekotharaccoon-cell"
+
+MONITORED_REPOS = [
+    # --- mycelium layer ---
+    "mycelium-money",
+    "mycelium-visibility",
+    "mycelium-grants",
+    "mycelium-knowledge",
+    # --- solarpunk services ---
+    "solarpunk-bank",
+    "solarpunk-grants",
+    "solarpunk-mutual-aid",
+    "solarpunk-market",
+    "solarpunk-legal",
+    "solarpunk-radio",
+    "solarpunk-learn",
+    "solarpunk-remedies",
+    # --- core repos ---
+    "gaza-rose-gallery",
+    "meeko-nerve-center",
+    "meeko-brain",
+]
+
+STALE_THRESHOLD_DAYS = 7
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+
+
+# -- gh CLI helpers --
+
+def gh_json(args: list[str]) -> dict | list | None:
+    """Run a gh CLI command that returns JSON."""
+    cmd = ["gh"] + args
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=30
+        )
+        if result.returncode != 0:
+            return None
+        return json.loads(result.stdout)
+    except (subprocess.TimeoutExpired, json.JSONDecodeError):
+        return None
+
+
+def gh_cli(args: list[str]) -> str | None:
+    """Run a gh CLI command, return stdout."""
+    try:
+        result = subprocess.run(
+            ["gh"] + args, capture_output=True, text=True, timeout=30
+        )
+        return result.stdout.strip() if result.returncode == 0 else None
+    except subprocess.TimeoutExpired:
+        return None
+
+
+# -- Per-repo health checks --
+
+def check_last_commit(repo: str) -> dict:
+    """Return last commit date and staleness flag."""
+    raw = gh_cli([
+        "api", f"repos/{ORG}/{repo}/commits?per_page=1",
+        "--jq", ".[0].commit.committer.date",
+    ])
+    if not raw:
+        return {"last_commit": None, "stale": True, "days_ago": None}
+
+    try:
+        last_dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        age = datetime.now(timezone.utc) - last_dt
+        return {
+            "last_commit": raw,
+            "stale": age > timedelta(days=STALE_THRESHOLD_DAYS),
+            "days_ago": age.days,
+        }
+    except (ValueError, TypeError):
+        return {"last_commit": raw, "stale": True, "days_ago": None}
+
+
+def check_workflows(repo: str) -> dict:
+    """Check latest workflow run conclusion."""
+    raw = gh_cli([
+        "api", f"repos/{ORG}/{repo}/actions/runs?per_page=1",
+        "--jq", ".workflow_runs[0] | {status, conclusion, name, html_url}",
+    ])
+    if not raw:
+        return {"workflow": None, "failing": False}
+
+    try:
+        info = json.loads(raw)
+        failing = info.get("conclusion") not in (None, "success", "skipped")
+        return {"workflow": info, "failing": failing}
+    except json.JSONDecodeError:
+        return {"workflow": None, "failing": False}
+
+
+def check_open_issues(repo: str) -> dict:
+    """Count open issues."""
+    raw = gh_cli([
+        "api", f"repos/{ORG}/{repo}",
+        "--jq", ".open_issues_count",
+    ])
+    try:
+        count = int(raw) if raw else 0
+    except ValueError:
+        count = 0
+    return {"open_issues": count}
+
+
+def check_repo(repo: str) -> dict:
+    """Full health check for one repo."""
+    print(f"  checking {repo}...")
+    commit_info = check_last_commit(repo)
+    wf_info = check_workflows(repo)
+    issue_info = check_open_issues(repo)
+
+    status = "healthy"
+    if commit_info["stale"]:
+        status = "stale"
+    if wf_info["failing"]:
+        status = "failing"
+    if commit_info["stale"] and wf_info["failing"]:
+        status = "critical"
+
+    return {
+        "repo": f"{ORG}/{repo}",
+        "status": status,
+        **commit_info,
+        **wf_info,
+        **issue_info,
+    }
+
+
+# -- Alerting --
+
+def post_alert_issue(problems: list[dict]):
+    """Create a single summary issue on mycelium-core with all problems."""
+    if not problems:
+        return
+
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    title = f"[Organism Alert] {len(problems)} repo(s) need attention - {now}"
+
+    body_lines = ["## Organism Health Alert\n"]
+    for p in problems:
+        icon = {"stale": "STALE", "failing": "FAIL", "critical": "CRIT"}.get(p["status"], "WARN")
+        line = f"- [{icon}] **{p['repo']}** -- status: `{p['status']}`"
+        if p.get("days_ago") is not None:
+            line += f", last commit {p['days_ago']}d ago"
+        if p.get("failing"):
+            line += ", workflow failing"
+        body_lines.append(line)
+
+    body_lines.append("\n---\n_Auto-generated by mycelium-core orchestrator._")
+    body = "\n".join(body_lines)
+
+    gh_cli([
+        "issue", "create",
+        "--repo", f"{ORG}/mycelium-core",
+        "--title", title,
+        "--body", body,
+        "--label", "organism-alert",
+    ])
+    print(f"  posted alert issue: {title}")
+
+
+# -- Main --
+
+def run():
+    """Execute full organism health scan."""
+    print("=== Mycelium Orchestrator: scanning organism ===\n")
+
+    results = []
+    for repo in MONITORED_REPOS:
+        info = check_repo(repo)
+        results.append(info)
+
+    # summary stats
+    healthy = [r for r in results if r["status"] == "healthy"]
+    stale = [r for r in results if r["status"] == "stale"]
+    failing = [r for r in results if r["status"] == "failing"]
+    critical = [r for r in results if r["status"] == "critical"]
+
+    report = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "total_repos": len(results),
+        "healthy": len(healthy),
+        "stale": len(stale),
+        "failing": len(failing),
+        "critical": len(critical),
+        "repos": results,
+    }
+
+    # write to data/organism_health.json
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    health_path = DATA_DIR / "organism_health.json"
+    health_path.write_text(json.dumps(report, indent=2))
+    print(f"\nHealth report written to {health_path}")
+
+    # print summary
+    print(f"\n  Healthy : {len(healthy)}")
+    print(f"  Stale   : {len(stale)}")
+    print(f"  Failing : {len(failing)}")
+    print(f"  Critical: {len(critical)}")
+
+    # alert on problems
+    problems = [r for r in results if r["status"] != "healthy"]
+    if problems:
+        print(f"\n  Posting alert issue for {len(problems)} problem(s)...")
+        post_alert_issue(problems)
+    else:
+        print("\n  All repos healthy. No alerts needed.")
+
+    return report
+
+
+if __name__ == "__main__":
+    report = run()
+    sys.exit(0 if report["critical"] == 0 else 1)
