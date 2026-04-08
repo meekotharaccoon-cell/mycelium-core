@@ -1,0 +1,160 @@
+{
+  "generated_at": "2026-04-08T12:19:55.395637+00:00",
+  "total_repos": 15,
+  "healthy": 0,
+  "stale": 15,
+  "failing": 0,
+  "critical": 0,
+  "repos": [
+    {
+      "repo": "meekotharaccoon-cell/mycelium-money",
+      "status": "stale",
+      "last_commit": null,
+      "stale": true,
+      "days_ago": null,
+      "workflow": null,
+      "failing": false,
+      "open_issues": 0
+    },
+    {
+      "repo": "meekotharaccoon-cell/mycelium-visibility",
+      "status": "stale",
+      "last_commit": null,
+      "stale": true,
+      "days_ago": null,
+      "workflow": null,
+      "failing": false,
+      "open_issues": 0
+    },
+    {
+      "repo": "meekotharaccoon-cell/mycelium-grants",
+      "status": "stale",
+      "last_commit": null,
+      "stale": true,
+      "days_ago": null,
+      "workflow": null,
+      "failing": false,
+      "open_issues": 0
+    },
+    {
+      "repo": "meekotharaccoon-cell/mycelium-knowledge",
+      "status": "stale",
+      "last_commit": null,
+      "stale": true,
+      "days_ago": null,
+      "workflow": null,
+      "failing": false,
+      "open_issues": 0
+    },
+    {
+      "repo": "meekotharaccoon-cell/solarpunk-bank",
+      "status": "stale",
+      "last_commit": null,
+      "stale": true,
+      "days_ago": null,
+      "workflow": null,
+      "failing": false,
+      "open_issues": 0
+    },
+    {
+      "repo": "meekotharaccoon-cell/solarpunk-grants",
+      "status": "stale",
+      "last_commit": null,
+      "stale": true,
+      "days_ago": null,
+      "workflow": null,
+      "failing": false,
+      "open_issues": 0
+    },
+    {
+      "repo": "meekotharaccoon-cell/solarpunk-mutual-aid",
+      "status": "stale",
+      "last_commit": null,
+      "stale": true,
+      "days_ago": null,
+      "workflow": null,
+      "failing": false,
+      "open_issues": 0
+    },
+    {
+      "repo": "meekotharaccoon-cell/solarpunk-market",
+      "status": "stale",
+      "last_commit": null,
+      "stale": true,
+      "days_ago": null,
+      "workflow": null,
+      "failing": false,
+      "open_issues": 0
+    },
+    {
+      "repo": "meekotharaccoon-cell/solarpunk-legal",
+      "status": "stale",
+      "last_commit": null,
+      "stale": true,
+      "days_ago": null,
+      "workflow": null,
+      "failing": false,
+      "open_issues": 0
+    },
+    {
+      "repo": "meekotharaccoon-cell/solarpunk-radio",
+      "status": "stale",
+      "last_commit": null,
+      "stale": true,
+      "days_ago": null,
+      "workflow": null,
+      "failing": false,
+      "open_issues": 0
+    },
+    {
+      "repo": "meekotharaccoon-cell/solarpunk-learn",
+      "status": "stale",
+      "last_commit": null,
+      "stale": true,
+      "days_ago": null,
+      "workflow": null,
+      "failing": false,
+      "open_issues": 0
+    },
+    {
+      "repo": "meekotharaccoon-cell/solarpunk-remedies",
+      "status": "stale",
+      "last_commit": null,
+      "stale": true,
+      "days_ago": null,
+      "workflow": null,
+      "failing": false,
+      "open_issues": 0
+    },
+    {
+      "repo": "meekotharaccoon-cell/gaza-rose-gallery",
+      "status": "stale",
+      "last_commit": null,
+      "stale": true,
+      "days_ago": null,
+      "workflow": null,
+      "failing": false,
+      "open_issues": 0
+    },
+    {
+      "repo": "meekotharaccoon-cell/meeko-nerve-center",
+      "status": "stale",
+      "last_commit": null,
+      "stale": true,
+      "days_ago": null,
+      "workflow": null,
+      "failing": false,
+      "open_issues": 0
+    },
+    {
+      "repo": "meekotharaccoon-cell/meeko-brain",
+      "status": "stale",
+      "last_commit": null,
+      "stale": true,
+      "days_ago": null,
+      "workflow": null,
+      "failing": false,
+      "open_issues": 0
+    }
+  ]
+}
