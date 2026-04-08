@@ -1,0 +1,4 @@
+# mycelium-core dependencies
+# The orchestrator and spore dispatcher use only the Python stdlib
+# plus the gh CLI (installed separately).
+# This file exists so the workflow pip-install step succeeds cleanly.
